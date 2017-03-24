@@ -1,0 +1,11 @@
+--- platform.rb	2017-03-16 12:37:02 +0200
++++ platform.rb.old	2017-02-28 06:49:24 +0200
+@@ -203,7 +203,7 @@
+           return path + "\\" if path =~ /^[a-zA-Z]:\\?$/
+ 
+           # Convert to UNC path
+-          path.gsub("/", "\\")
++          "\\\\?\\" + path.gsub("/", "\\")
+         end
+ 
+         # Returns a boolean noting whether the terminal supports color.
