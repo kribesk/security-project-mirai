@@ -89,16 +89,16 @@ int connection_consume_iacs(struct connection *conn)
     int consumed = 0;
     uint8_t *ptr = conn->rdbuf;
 
-    while (consumed < conn->rdbuf_pos)
+    while (1)
     {
         int i;
 
-        if (*ptr != 0xff)
-            break;
-        else if (*ptr == 0xff)
+        if (*ptr == 0xff)
         {
+            hexDump("TELNET OPTION", ptr, 3);
+            usleep(1000);
             if (!can_consume(conn, ptr, 1))
-                break;
+                continue;
             if (ptr[1] == 0xff)
             {
                 ptr += 2;
@@ -111,7 +111,7 @@ int connection_consume_iacs(struct connection *conn)
                 uint8_t tmp2[9] = {255, 250, 31, 0, 80, 0, 24, 255, 240};
 
                 if (!can_consume(conn, ptr, 2))
-                    break;
+                    continue;
                 if (ptr[2] != 31)
                     goto iac_wont;
 
@@ -126,7 +126,7 @@ int connection_consume_iacs(struct connection *conn)
                 iac_wont:
 
                 if (!can_consume(conn, ptr, 2))
-                    break;
+                    continue;
 
                 for (i = 0; i < 3; i++)
                 {
@@ -141,6 +141,9 @@ int connection_consume_iacs(struct connection *conn)
                 consumed += 3;
             }
         }
+        else {
+          break;
+        }
     }
 
     return consumed;
@@ -153,7 +156,9 @@ int connection_consume_login_prompt(struct connection *conn)
 
     for (i = conn->rdbuf_pos; i >= 0; i--)
     {
-        if (conn->rdbuf[i] == ':' || conn->rdbuf[i] == '>' || conn->rdbuf[i] == '$' || conn->rdbuf[i] == '#' || conn->rdbuf[i] == '%')
+           printf("connection_consume_login_prompt byte: %d\n", conn->rdbuf[i]);
+
+           if (conn->rdbuf[i] == ':' || conn->rdbuf[i] == '>' || conn->rdbuf[i] == '$' || conn->rdbuf[i] == '#' || conn->rdbuf[i] == '%')
         {
 #ifdef DEBUG
             printf("matched login prompt at %d, \"%c\", \"%s\"\n", i, conn->rdbuf[i], conn->rdbuf);
@@ -467,16 +472,20 @@ int connection_consume_arch(struct connection *conn)
     if (!conn->info.has_arch)
     {
         // TODO: remove this and fix arch detection
+#ifdef LOADER_NO_ARCHDETECT
         strcpy(conn->info.arch, "mips");
         conn->info.has_arch = TRUE;
 	return 0;
+#endif
 
+        printf("Consuming arch...\n");
         struct elf_hdr *ehdr;
         int elf_start_pos;
 
-        if ((elf_start_pos = util_memsearch(conn->rdbuf, conn->rdbuf_pos, "ELF", 3)) == -1)
+        if ((elf_start_pos = util_memsearch(conn->rdbuf, conn->rdbuf_pos, "ELF", 3)) == -1) {
             printf("ELF not found!\n");
             return 0;
+        }
         elf_start_pos -= 4; // Go back ELF
         printf("ELF start pos: %d\n", elf_start_pos);
 
@@ -486,16 +495,16 @@ int connection_consume_arch(struct connection *conn)
         switch (ehdr->e_ident[EI_DATA])
         {
             case EE_NONE:
-		print("EE_NONE\n");
+		printf("EE_NONE\n");
                 return 0;
             case EE_BIG:
-		print("EE_BIG\n");
+		printf("EE_BIG\n");
 #ifdef LOADER_LITTLE_ENDIAN
                 ehdr->e_machine = htons(ehdr->e_machine);
 #endif
                 break;
             case EE_LITTLE:
-		print("EE_LITTLE\n");
+		printf("EE_LITTLE\n");
 #ifdef LOADER_BIG_ENDIAN
                 ehdr->e_machine = htons(ehdr->e_machine);
 #endif
@@ -527,6 +536,9 @@ int connection_consume_arch(struct connection *conn)
             conn->info.arch[0] = 0;
             connection_close(conn);
         }
+        printf("ARCH: %s\n", conn->info.arch);
+        return 1;
+        
     }
     else
     {
@@ -571,11 +583,11 @@ int connection_consume_upload_methods(struct connection *conn)
         return 0;
 
     if (util_memsearch(conn->rdbuf, offset, "wget: applet not found", 22) == -1)
-        conn->info.upload_method = UPLOAD_WGET;
+        conn->info.upload_method = UPLOAD_TFTP;
     else if (util_memsearch(conn->rdbuf, offset, "tftp: applet not found", 22) == -1)
         conn->info.upload_method = UPLOAD_TFTP;
     else
-        conn->info.upload_method = UPLOAD_ECHO;
+        conn->info.upload_method = UPLOAD_TFTP;
 
     return offset;
 }

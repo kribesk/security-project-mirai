@@ -53,7 +53,7 @@ func (this *Admin) Handle() {
         return
     }
 
-    this.conn.Write([]byte("\r\n\n>> Tervetuloa!\r\n\n"))
+    this.conn.Write([]byte(constants.MiraiPrompt))
 
     go func() {
         i := 0

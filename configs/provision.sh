@@ -2,7 +2,7 @@
 
 echo ">>> Installing packages..."
 export DEBIAN_FRONTEND=noninteractive
-if [ "$[$(date +%s) - $(stat -c %Z /var/cache/apt/pkgcache.bin)]" -ge 600000 ]; then
+if [ "$[$(date +%s) - $(stat -c %Z /var/cache/apt/pkgcache.bin)]" -ge 600 ]; then
   apt-get update
 fi
 apt-get install -y git gcc golang electric-fence mysql-server mysql-client duende

@@ -1,3 +1,5 @@
 @ECHO OFF
-vagrant ssh -c "sudo /vagrant/configs/start.sh"
+ECHO Starting mirai cnc and loader...
+
+vagrant ssh mirai -c "sudo /vagrant/configs/start.sh"
 PAUSE

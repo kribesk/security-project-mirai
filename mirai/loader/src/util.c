@@ -110,6 +110,7 @@ int util_socket_and_bind(struct server *srv)
 
 int util_memsearch(char *buf, int buf_len, char *mem, int mem_len)
 {
+    printf("Buffer size: %d, searching: %s\n", buf_len, mem);
     int i, matched = 0;
 
     if (mem_len > buf_len)
@@ -145,7 +146,7 @@ BOOL util_sockprintf(int fd, const char *fmt, ...)
             len = BUFFER_SIZE;
 
 #ifdef DEBUG
-//        hexDump("TELOUT", buffer, len);
+        hexDump("TELOUT", buffer, len);
 //         printf("TELOUT: %s\n", buffer);
 #endif
         if (send(fd, buffer, len, MSG_NOSIGNAL) != len)

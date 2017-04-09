@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -52,7 +53,27 @@ int main(int argc, char *argv[]) {
     if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0)
         error("ERROR on binding");
 
-    printf("Listening on %s:%d...\n", inet_ntoa(serv_addr.sin_addr), htons(serv_addr.sin_port));
+    if (argc > 0) {
+//      printf("Using initial file: %s\n", argv[1]);
+      FILE * fd = fopen(argv[1], "r");
+      if (fd == NULL)
+        error("File does not exist");
+      else {
+        char * line = NULL;
+        size_t len = 0;
+        size_t read;
+        while ((read = getline(&line, &len, fd)) != -1) {
+          printf("%s\n", line); 
+          fflush(stdout);
+        }
+        if (line)
+          free(line);
+      }
+      fclose(fd);
+    }
+
+
+//    printf("Listening on %s:%d...\n", inet_ntoa(serv_addr.sin_addr), htons(serv_addr.sin_port));
     listen(sockfd, 5);
     clilen = sizeof(cli_addr);
 
@@ -86,6 +107,7 @@ int main(int argc, char *argv[]) {
             struct in_addr printable_address;
             printable_address.s_addr = address;
             printf("%s:%d %s:%s\n", inet_ntoa(printable_address), port, username, password);
+            fflush(stdout);
             close(newsockfd);
 
           } else {

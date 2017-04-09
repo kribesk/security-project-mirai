@@ -1,0 +1,1 @@
+pandoc -sS --filter pandoc-citeproc -o report.docx meta.md background.md mirai.md attack.md references.md
